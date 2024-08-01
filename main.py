@@ -2,7 +2,7 @@ from fasthtml.fastapp import *
 import sqlite3
 import medals_table
 
-app, rt = fast_app(live=True)
+app, rt = fast_app(live=False)
 
 @app.on_event("startup")
 async def startup_event():
