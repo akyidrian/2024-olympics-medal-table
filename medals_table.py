@@ -3,13 +3,19 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.firefox.service import Service as FirefoxService
 import sqlite3
+from webdriver_manager.firefox import GeckoDriverManager
 
-def create_database():
-    conn = sqlite3.connect('olympics_medals.db')
+
+DATABASE_NAME = 'medal_table.db'
+
+
+def create_sqlite_table():
+    conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
+    # TODO: try-catch
     # Create the table if it doesn't exist
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS medals (
@@ -20,14 +26,17 @@ def create_database():
             gold INTEGER,
             silver INTEGER,
             bronze INTEGER,
-            total_medals INTEGER
+            total_medals INTEGER,
+            FOREIGN KEY (country_name) REFERENCES population (entity)
+            FOREIGN KEY (country_code) REFERENCES population (code)
         )
     ''')
     conn.commit()
     conn.close()
 
+
 def insert_or_update_data(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals):
-    conn = sqlite3.connect('olympics_medals.db')
+    conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     try:
         cursor.execute('''
@@ -36,27 +45,37 @@ def insert_or_update_data(order_number, flag_url, country_code, country_name, go
         ''', (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals))
         conn.commit()
     except sqlite3.Error as e:
-        print(f"Error for country_code {country_code}: {e}")
+        print(f"Error inserting {country_name} ({country_code}: {e}")
     finally:
-        conn.close()
+        conn.close() # TODO: COMMIT?
 
 
 def print_all_rows():
-    conn = sqlite3.connect('olympics_medals.db')
+    conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM medals ORDER BY order_number')
+
+    # TODO: try-catch?
+    cursor.execute('''
+        SELECT m.*,
+               COALESCE(p1.population, p2.population) AS population
+        FROM medals m
+        LEFT JOIN population p1 ON m.country_name = p1.entity
+        LEFT JOIN population p2 ON m.country_code = p2.code
+    ''')
     rows = cursor.fetchall()
     
     for row in rows:
         print(row)
-#        print(f"Order: {row[0]}, Country: {row[3]} ({row[2]}), Medals: Gold {row[4]}, Silver {row[5]}, Bronze {row[6]}, Total {row[7]}")
     print(f"Total medal winning countries: {len(rows)}")
 
-    
     conn.close()
 
-# Function to extract data from visible rows and insert into the database
+# TODO: Think there is a bug here
 def parse_table_from_visible_rows(html_content):
+    '''
+    Extracts visible medal table data from official olympics website
+    and inserts the data into SQLite table
+    '''
     soup = BeautifulSoup(html_content, 'html.parser')
     rows = soup.find_all('div', {'data-testid': 'noc-row'})
     
@@ -76,19 +95,36 @@ def parse_table_from_visible_rows(html_content):
         # Insert data into the SQLite table
         insert_or_update_data(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
 
-def run():
-    create_database()
-    chrome_options = Options()
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-    chrome_options.add_argument("--headless=new")  # Run in headless mode 
-    chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--disable-gpu")
-    # Optional additional arguments
-    # chrome_options.add_argument("--no-sandbox")
-    # chrome_options.add_argument("--disable-dev-shm-usage")
-    # chrome_options.add_argument("--proxy-server='direct://'")
-    # chrome_options.add_argument("--proxy-bypass-list=*")
-    driver = webdriver.Chrome(options=chrome_options)
+def create_table():
+    create_sqlite_table()
+    # Set up Firefox options
+    options = webdriver.FirefoxOptions()
+
+    # Set user agent
+    options.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+
+    # Run in headless mode
+    options.add_argument("-headless")
+
+    # Set window size
+    options.add_argument("--width=1920")
+    options.add_argument("--height=1080")
+
+    # Disable GPU (not typically needed for Firefox, but included for completeness)
+    options.add_argument("--disable-gpu")
+
+    # No sandbox (Firefox doesn't use sandboxing, so this is not applicable)
+
+    # Disable shared memory usage
+    options.add_argument("--disable-dev-shm-usage")
+
+    # Proxy settings
+    options.set_preference("network.proxy.type", 1)
+    options.set_preference("network.proxy.socks", "")
+    options.set_preference("network.proxy.socks_port", 0)
+    options.set_preference("network.proxy.socks_remote_dns", False)
+    install = GeckoDriverManager().install()
+    driver = webdriver.Firefox(service=FirefoxService(install), options=options)
 
     try:
         # Open the URL
@@ -125,8 +161,8 @@ def run():
     finally:
         driver.quit()
 
-    print_all_rows()
 
 if __name__ == "__main__":
-    run()
+    create_table()
+    print_all_rows()
 
