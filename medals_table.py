@@ -76,7 +76,7 @@ def parse_table_from_visible_rows(html_content):
         # Insert data into the SQLite table
         insert_or_update_data(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
 
-def main():
+def run():
     create_database()
     chrome_options = Options()
     chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
@@ -128,5 +128,5 @@ def main():
     print_all_rows()
 
 if __name__ == "__main__":
-    main()
+    run()
 

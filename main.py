@@ -1,5 +1,12 @@
 from fasthtml.fastapp import *
 import sqlite3
+import medals_table
+
+app, rt = fast_app(live=True)
+
+@app.on_event("startup")
+async def startup_event():
+    medals_table.run()
 
 def medal_table():
     conn = sqlite3.connect('olympics_medals.db')
@@ -26,7 +33,6 @@ def medal_table():
     head = Thead(*map(Th, flds))
     return Table(head, *html_rows)
 
-app, rt = fast_app(live=True)
 @rt("/")
 async def get():
     table = medal_table()
