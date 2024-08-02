@@ -7,10 +7,24 @@ app, rt = fast_app(live=False)
 
 @app.on_event("startup")
 async def startup_event():
-    # Need to create the population table first due to foreign key relationship
-    # between medal and population tables
-    population.create_table()
-    medals_table.create_table() # TODO: Rename this
+    '''
+    Creates database. We create the population table first due to the
+    foreign key relationship between medal and population tables
+    '''
+    try:
+        population.create_table()
+    except sqlite3.Error as e:
+        print(f'ERROR: Failed to create population table: {e}')
+        return
+
+    try:
+        medals_table.create_table() # TODO: Rename this
+    except sqlite3.Error as e:
+        print(f'ERROR: Failed to create medals table: {e}')
+        return
+
+    print('SUCCESS: Created medal table database')
+
 
 def medal_table():
     conn = sqlite3.connect(medals_table.DATABASE_NAME)
@@ -23,7 +37,7 @@ def medal_table():
         LEFT JOIN population p2 ON m.country_code = p2.code
     ''')
     rows = cursor.fetchall()
-    
+
     html_rows = []
     for row in rows:
         order = Td(row[0])
@@ -38,7 +52,6 @@ def medal_table():
         population = Td(format(row[8], ','))
         pop_per_medal = Td(format(int(row[8] / row[7]), ','))
         html_rows.append(Tr(order, country, gold, silver, bronze, total, population, pop_per_medal))
-
 
     conn.close()
 

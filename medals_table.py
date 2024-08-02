@@ -15,7 +15,6 @@ def create_sqlite_table():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
-    # TODO: try-catch
     # Create the table if it doesn't exist
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS medals (
@@ -38,23 +37,17 @@ def create_sqlite_table():
 def insert_or_update_data(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals):
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
-    try:
-        cursor.execute('''
-            INSERT OR REPLACE INTO medals (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals))
-        conn.commit()
-    except sqlite3.Error as e:
-        print(f"Error inserting {country_name} ({country_code}: {e}")
-    finally:
-        conn.close() # TODO: COMMIT?
+    cursor.execute('''
+        INSERT OR REPLACE INTO medals (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals))
+    conn.commit()
+    conn.close()
 
 
 def print_all_rows():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
-
-    # TODO: try-catch?
     cursor.execute('''
         SELECT m.*,
                COALESCE(p1.population, p2.population) AS population
