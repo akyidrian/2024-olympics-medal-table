@@ -46,6 +46,47 @@ async def startup_event():
     create_database()
     asyncio.create_task(background_task())
 
+def create_world_winners_row(rows):
+    gold = 0
+    silver = 0
+    bronze = 0
+    total = 0
+    population = 0
+    for row in rows:
+        gold += row[4]
+        silver += row[5]
+        bronze += row[6]
+        total += row[7]
+        population += row[8]
+
+    world_winners = Div(Img(src=OLYMPIC_RINGS_URL, alt="", width="20px"), 
+                        Span("World Winners"))
+    return Tr(Td(0),
+              Td(world_winners),
+              Td(gold),
+              Td(silver),
+              Td(bronze),
+              Td(total),
+              Td(format(population, ',')),
+              Td(format(population//total, ',')))
+
+
+# TODO: May be able to use *map(Td, elem)?
+def create_country_row(row):
+        order, flag_url, country_code, country_name, gold, silver, bronze, total, population = row
+        country = Div(Img(src=flag_url, alt="", width="20px"),
+                      Span(f"{country_name} ({country_code})"))
+        population = format(row[8], ',')
+        pop_per_medal = format(row[8]//row[7], ',')
+        return Tr(Td(order),
+                  Td(country), 
+                  Td(gold), 
+                  Td(silver), 
+                  Td(bronze), 
+                  Td(total), 
+                  Td(population), 
+                  Td(pop_per_medal))
+
 
 def create_medal_table():
     conn = sqlite3.connect(medal_table.DATABASE_NAME)
@@ -57,38 +98,15 @@ def create_medal_table():
         LEFT JOIN population p1 ON m.country_name = p1.entity
         LEFT JOIN population p2 ON m.country_code = p2.code
     ''')
-    rows = cursor.fetchall()
+    database_rows = cursor.fetchall()
     conn.close()
 
-    # TODO: Need to make to robust to rank and to allow user interactive sorting
-    html_rows = [None] * 1 # Creating a placeholder element for the "World Winners"
-    total_gold = 0
-    total_silver = 0
-    total_bronze = 0
-    grand_total = 0
-    population_winners = 0
-    for row in rows:
-        order = Td(row[0])
-        flag_url = row[1]
-        country_code = row[2]
-        country_name = row[3]
-        country = Td(Div(Img(src=flag_url, alt="", width="20px"), Span(f"{country_name} ({country_code})")))
-        gold = Td(row[4])
-        silver = Td(row[5])
-        bronze = Td(row[6])
-        total = Td(row[7])
-        population = Td(format(row[8], ','))
-        pop_per_medal = Td(format(row[8]//row[7], ','))
-        html_rows.append(Tr(order, country, gold, silver, bronze, total, population, pop_per_medal))
-
-        total_gold += row[4]
-        total_silver += row[5]
-        total_bronze += row[6]
-        grand_total += row[7]
-        population_winners += row[8]
-
-    world_winners = Td(Div(Img(src=OLYMPIC_RINGS_URL, alt="", width="20px"), Span("World Winners")))
-    html_rows[0] = Tr(Td(0), world_winners, Td(total_gold), Td(total_silver), Td(total_bronze), Td(grand_total), Td(format(population_winners, ',')), Td(format(population_winners//grand_total, ',')))
+    # TODO: Allow user interactive sorting via js?
+    sorted_rows = sorted(database_rows, key=lambda r: (r[0], r[3]), reverse=False)
+    html_rows = [create_world_winners_row(sorted_rows)] # World Winners will always be number 1
+    for r in sorted_rows:
+        html_rows.append(create_country_row(r))
+    #html_rows.append(create_country_row(r) for r in sorted_rows)
 
     flds = ['Rank', 'Country', 'Gold', 'Silver', 'Bronze', 'Total', 'Population', 'Pop. per Medal']
     head = Thead(*map(Th, flds))
