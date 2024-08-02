@@ -2,7 +2,7 @@ import pandas as pd
 import sqlite3
 
 
-DATABASE_NAME = 'medal_table.db'
+DATABASE_NAME = 'medals.db'
 CSV_FILE_PATH = 'population.csv' # assuming it's in 'this' directory
 
 
@@ -48,11 +48,25 @@ def create_table():
     conn.close()
 
 
+def print_all_rows():
+    conn = sqlite3.connect(DATABASE_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM population
+    ''')
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        print(row)
+
+    conn.close()
+
+
 if __name__ == '__main__':
     try:
         create_table()
     except sqlite3.Error as e:
-        print(f"An error occurred: {e}")
-        print("FAILED: Data has not been commited to the SQLite database")
-    print("SUCCESS: Data has been commited to the SQLite database")
+        print(f'ERROR: Failed to create population table: {e}')
+        exit(1)
+    print_all_rows()
 

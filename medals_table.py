@@ -8,7 +8,7 @@ import sqlite3
 from webdriver_manager.firefox import GeckoDriverManager
 
 
-DATABASE_NAME = 'medal_table.db'
+DATABASE_NAME = 'medals.db'
 
 
 def create_sqlite_table():
@@ -44,24 +44,6 @@ def insert_or_update_data(order_number, flag_url, country_code, country_name, go
     conn.commit()
     conn.close()
 
-
-def print_all_rows():
-    conn = sqlite3.connect(DATABASE_NAME)
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT m.*,
-               COALESCE(p1.population, p2.population) AS population
-        FROM medals m
-        LEFT JOIN population p1 ON m.country_name = p1.entity
-        LEFT JOIN population p2 ON m.country_code = p2.code
-    ''')
-    rows = cursor.fetchall()
-    
-    for row in rows:
-        print(row)
-    print(f"Total medal winning countries: {len(rows)}")
-
-    conn.close()
 
 # TODO: Think there is a bug here
 def parse_table_from_visible_rows(html_content):
@@ -155,7 +137,30 @@ def create_table():
         driver.quit()
 
 
+def print_all_rows():
+    conn = sqlite3.connect(DATABASE_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT m.*,
+               COALESCE(p1.population, p2.population) AS population
+        FROM medals m
+        LEFT JOIN population p1 ON m.country_name = p1.entity
+        LEFT JOIN population p2 ON m.country_code = p2.code
+    ''')
+    rows = cursor.fetchall()
+    
+    for row in rows:
+        print(row)
+    print(f"Total medal winning countries: {len(rows)}")
+
+    conn.close()
+
+
 if __name__ == "__main__":
-    create_table()
+    try:
+        create_table()
+    except sqlite3.Error as e:
+        print(f'ERROR: Failed to create medals table: {e}')
+        exit(1)
     print_all_rows()
 
