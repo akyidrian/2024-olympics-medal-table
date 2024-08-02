@@ -7,10 +7,10 @@ from webdriver_manager.firefox import GeckoDriverManager
 
 
 DATABASE_NAME = 'medals.db'
-MEDAL_TABLE_URL = 'https://olympics.com/en/paris-2024/medals'
+_MEDAL_TABLE_URL = 'https://olympics.com/en/paris-2024/medals'
 
 
-def create_medals_table():
+def _create_medals_table():
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
     
@@ -33,18 +33,41 @@ def create_medals_table():
     conn.close()
 
 
-def insert_or_update_data(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals):
+def _update_medals_table(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals):
     conn = sqlite3.connect(DATABASE_NAME)
     cursor = conn.cursor()
+
+    # Check if the row already exists
     cursor.execute('''
-        INSERT OR REPLACE INTO medals (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals))
+        SELECT order_number, gold, silver, bronze, total_medals FROM medals WHERE country_code = ? AND country_name = ?
+    ''', (country_code, country_name))
+    row = cursor.fetchone()
+
+    if row is None:
+        # Row does not exist, insert new row
+        cursor.execute('''
+            INSERT INTO medals (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals))
+    else:
+        # Row does exist, so lets figure out if medals have changed
+        has_changed = row[0] != order_number or \
+                      row[1] != gold or \
+                      row[2] != silver or \
+                      row[3] != bronze or \
+                      row[4] != total_medals
+        if has_changed:
+            # Update the row if medals have changed
+            cursor.execute('''
+                UPDATE medals
+                SET order_number = ?, flag_url = ?, gold = ?, silver = ?, bronze = ?, total_medals = ?
+                WHERE country_code = ? AND country_name = ?
+            ''', (order_number, flag_url, gold, silver, bronze, total_medals, country_code, country_name))
     conn.commit()
     conn.close()
 
 
-def parse_table_from_visible_rows(content):
+def _parse_visible_html_table_rows(content):
     '''
     Extracts visible medal table data from official olympics website
     and inserts the data into SQLite table
@@ -63,10 +86,10 @@ def parse_table_from_visible_rows(content):
         silver = int(medal_counts[1].text) if len(medal_counts) > 1 else 0
         bronze = int(medal_counts[2].text) if len(medal_counts) > 2 else 0
         total_medals = int(row.find('span', class_='e1oix8v91 emotion-srm-5nhv3o').text)
-        insert_or_update_data(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
+        _update_medals_table(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals)
 
 
-def create_webdriver():
+def _create_webdriver():
     options = webdriver.FirefoxOptions()
     options.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
     options.add_argument("-headless")
@@ -84,11 +107,10 @@ def create_webdriver():
     return webdriver.Firefox(service=FirefoxService(install), options=options)
 
 
-def create_table():
-    create_medals_table()
-    driver = create_webdriver()
+def update_table():
+    driver = _create_webdriver()
 
-    driver.get(MEDAL_TABLE_URL) # Open the url
+    driver.get(_MEDAL_TABLE_URL) # Open the url
     time.sleep(1) # HACK: Wait for the initial content to load
 
     # Continuously scroll and extract data from webpage until we reach the end...
@@ -98,7 +120,7 @@ def create_table():
     viewport_height = driver.execute_script("return window.innerHeight")
     last_height = driver.execute_script("return window.pageYOffset + window.innerHeight")
     while last_height < max_height:
-        parse_table_from_visible_rows(driver.page_source)
+        _parse_visible_html_table_rows(driver.page_source)
 
         # Scroll down by a fraction of the height of the viewport
         driver.execute_script(f"window.scrollBy(0, {viewport_height//5});")
@@ -108,9 +130,14 @@ def create_table():
     # Ensure we wcroll to the bottom, sleep then parse any remaining content
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(0.1) # HACK: Ensure content has loaded
-    parse_table_from_visible_rows(driver.page_source)
+    _parse_visible_html_table_rows(driver.page_source)
 
     driver.quit()
+
+
+def create_table():
+    _create_medals_table()
+    update_table()
 
 
 def print_all_rows():
