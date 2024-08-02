@@ -1,6 +1,6 @@
 from fasthtml.fastapp import *
 import sqlite3
-import medals_table
+import medal_table
 import population
 
 app, rt = fast_app(live=False)
@@ -18,7 +18,7 @@ async def startup_event():
         return
 
     try:
-        medals_table.create_table() # TODO: Rename this
+        medal_table.create_table()
     except sqlite3.Error as e:
         print(f'ERROR: Failed to create medals table: {e}')
         return
@@ -26,8 +26,8 @@ async def startup_event():
     print('SUCCESS: Created medal table database')
 
 
-def medal_table():
-    conn = sqlite3.connect(medals_table.DATABASE_NAME)
+def create_medal_table():
+    conn = sqlite3.connect(medal_table.DATABASE_NAME)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT m.*,
@@ -61,7 +61,7 @@ def medal_table():
 
 @rt("/")
 async def get():
-    table = medal_table()
+    table = create_medal_table()
     return Titled("2024 Olympics Medal Table", table)
 
 serve()
