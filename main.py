@@ -14,8 +14,9 @@ def create_database():
     Creates database. We create the population table first due to the
     foreign key relationship between medal and population tables
     '''
+    remapping = {"Taiwan": ("Chinese Taipei", "TPE")}
     try:
-        population.create_table()
+        population.create_table(remapping)
     except sqlite3.Error as e:
         print(f'ERROR: Failed to create population table: {e}')
         return
@@ -41,51 +42,43 @@ async def background_task():
 
         print('SUCCESS: Created medal table database')
 
+
 @app.on_event("startup")
 async def startup_event():
     create_database()
     asyncio.create_task(background_task())
+
 
 def create_world_winners_row(rows):
     gold = 0
     silver = 0
     bronze = 0
     total = 0
-    population = 0
+    pop = 0
     for row in rows:
         gold += row[4]
         silver += row[5]
         bronze += row[6]
         total += row[7]
-        population += row[8]
+        pop += row[8] if row[8] is not None else 0
 
     world_winners = Div(Img(src=OLYMPIC_RINGS_URL, alt="", width="20px"), 
                         Span("World Winners"))
-    return Tr(Td(0),
-              Td(world_winners),
-              Td(gold),
-              Td(silver),
-              Td(bronze),
-              Td(total),
-              Td(format(population, ',')),
-              Td(format(population//total, ',')))
+    population = format(pop, ',')
+    population_per_medal = format(pop//total, ',')
+    html_rows = map(Td, (0, world_winners, gold, silver, bronze, total, population, population_per_medal))
+    return Tr(*html_rows)
 
 
-# TODO: May be able to use *map(Td, elem)?
 def create_country_row(row):
-        order, flag_url, country_code, country_name, gold, silver, bronze, total, population = row
+        order, flag_url, country_code, country_name, gold, silver, bronze, total, pop = row
         country = Div(Img(src=flag_url, alt="", width="20px"),
                       Span(f"{country_name} ({country_code})"))
-        population = format(row[8], ',')
-        pop_per_medal = format(row[8]//row[7], ',')
-        return Tr(Td(order),
-                  Td(country), 
-                  Td(gold), 
-                  Td(silver), 
-                  Td(bronze), 
-                  Td(total), 
-                  Td(population), 
-                  Td(pop_per_medal))
+        pop = pop if pop is not None else 0
+        population = format(pop, ',')
+        population_per_medal = format(pop//row[7], ',')
+        html_rows = map(Td, (order, country, gold, silver, bronze, total, population, population_per_medal))
+        return Tr(*html_rows)
 
 
 def create_medal_table():
@@ -106,16 +99,17 @@ def create_medal_table():
     html_rows = [create_world_winners_row(sorted_rows)] # World Winners will always be number 1
     for r in sorted_rows:
         html_rows.append(create_country_row(r))
-    #html_rows.append(create_country_row(r) for r in sorted_rows)
 
     flds = ['Rank', 'Country', 'Gold', 'Silver', 'Bronze', 'Total', 'Population', 'Pop. per Medal']
     head = Thead(*map(Th, flds))
-    return Div(P(Table(head, *html_rows)))
+    return Table(head, *html_rows)
+
 
 @rt("/")
 async def get():
     table = create_medal_table()
     return Titled("2024 Olympics Medal Table", table)
+
 
 serve()
 

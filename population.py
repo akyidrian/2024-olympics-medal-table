@@ -3,11 +3,11 @@ import sqlite3
 
 
 DATABASE_NAME = 'medals.db'
-CSV_FILE_PATH = 'population.csv' # assuming it's in 'this' directory
+_CSV_FILE_PATH = 'population.csv' # assuming it's in 'this' directory
 
 
-def create_table():
-    data_frame = pd.read_csv(CSV_FILE_PATH)
+def create_table(remapping = {}):
+    data_frame = pd.read_csv(_CSV_FILE_PATH)
 
     # Group by 'Entity' (country name) and get the index of the row with the maximum year for each group
     latest_indices = data_frame.groupby('Entity')['Year'].idxmax()
@@ -39,10 +39,18 @@ def create_table():
     ''')
 
     for row in result.itertuples(index=False):
+        entity = row.Entity
+        code = row.Code
+
+        # If there is a key match in our remapping dictionary, we want
+        # to use a different entity and code to represent that entity
+        if row.Entity in remapping:
+            entity, code = remapping[row.Entity]
+
         cursor.execute('''
         INSERT OR REPLACE INTO population (entity, code, year, population)
         VALUES (?, ?, ?, ?)
-        ''', (row.Entity, row.Code, row.Year, row._3))
+        ''', (entity, code, row.Year, row._3))
 
     conn.commit()
     conn.close()
