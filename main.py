@@ -7,7 +7,9 @@ import random
 
 OLYMPIC_RINGS_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Olympic_rings_without_rims.svg/200px-Olympic_rings_without_rims.svg.png"
 
-app, rt = fast_app(live=False)
+main_stylesheet = Link(rel="stylesheet", href="main.css")
+main_script = Script(src="main.js")
+app, rt = fast_app(live=False, hdrs=(main_stylesheet, main_script))
 
 def create_database():
     '''
@@ -94,13 +96,12 @@ def create_medal_table():
     database_rows = cursor.fetchall()
     conn.close()
 
-    # TODO: Allow user interactive sorting via js?
     sorted_rows = sorted(database_rows, key=lambda r: (r[0], r[3]), reverse=False)
     html_rows = [create_world_winners_row(sorted_rows)] # World Winners will always be number 1
     for r in sorted_rows:
         html_rows.append(create_country_row(r))
 
-    flds = ['Rank', 'Country', 'Gold', 'Silver', 'Bronze', 'Total', 'Population', 'Pop. per Medal']
+    flds = ['Rank', 'Country', 'Gold', 'Silver', 'Bronze', 'Total', 'Population', 'Population per Medal']
     head = Thead(*map(Th, flds))
     return Table(head, *html_rows)
 

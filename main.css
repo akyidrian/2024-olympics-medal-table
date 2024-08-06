@@ -1,0 +1,13 @@
+th::after {
+    content: '\25b4'; /* Unicode for upward triangle */
+    padding-left: 5px;
+    visibility: hidden;
+}
+th.asc::after {
+    content: '\25b4'; /* Unicode for upward triangle */
+    visibility: visible;
+}
+th.desc::after {
+    content: '\25be'; /* Unicode for downward triangle */
+    visibility: visible;
+}
