@@ -14,9 +14,12 @@ app, rt = fast_app(live=False, hdrs=(main_stylesheet, main_script))
 def create_database():
     '''
     Creates database. We create the population table first due to the
-    foreign key relationship between medal and population tables
+    foreign key relationship between medal and population tables.
     '''
-    remapping = {"Taiwan": ("Chinese Taipei", "TPE")}
+    remapping = {
+        "Taiwan": ("Chinese Taipei", "TPE"),
+        "Iran": ("Islamic Republic of Iran", "IRI")
+    }
     try:
         population.create_table(remapping)
     except sqlite3.Error as e:
