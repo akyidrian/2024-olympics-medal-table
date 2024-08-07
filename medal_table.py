@@ -97,7 +97,6 @@ def _create_webdriver():
     options.add_argument("--height=1080")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-dev-shm-usage") # Disable shared memory usage
-    options.add_argument("--tmp-dir=/dev/shm")
 
     # Proxy settings
     options.set_preference("network.proxy.type", 1)
