@@ -76,11 +76,11 @@ def _parse_visible_html_table_rows(content):
     rows = soup.find_all('div', {'data-testid': 'noc-row'})
     
     for row in rows:
-        order_number = int(row.find('span', class_='e1oix8v91').text)
-        flag_img = row.find('img', class_='elhe7kv3')
+        order_number = int(row.find('span', class_='e1oix8v91 emotion-srm-1m7a47k').text)
+        flag_img = row.find('img', class_='euzfwma3 emotion-srm-1fosvfu eph8xjg0')
         flag_url = flag_img['src'] if flag_img else ''
-        country_code = row.find('span', class_='elhe7kv4').text
-        country_name = row.find('span', class_='elhe7kv5').text
+        country_code = row.find('span', class_='euzfwma4 emotion-srm-5xu01z').text
+        country_name = row.find('span', class_='euzfwma5 emotion-srm-uu3d5n').text
         medal_counts = row.find_all('span', class_='e1oix8v91 emotion-srm-81g9w1')
         gold = int(medal_counts[0].text) if len(medal_counts) > 0 else 0
         silver = int(medal_counts[1].text) if len(medal_counts) > 1 else 0
