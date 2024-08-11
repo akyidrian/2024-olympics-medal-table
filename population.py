@@ -2,7 +2,7 @@ import pandas as pd
 import sqlite3
 
 
-DATABASE_NAME = 'medals.db'
+DATABASE_FILE_PATH = 'medals.db'
 _CSV_FILE_PATH = 'population.csv' # assuming it's in 'this' directory
 
 
@@ -26,7 +26,7 @@ def create_table(remapping = {}):
     result = latest_population[['Entity', 'Code', 'Year', 'Population (historical)']]
 
     # Connect to SQLite database (or create it if it doesn't exist)
-    conn = sqlite3.connect(DATABASE_NAME)
+    conn = sqlite3.connect(DATABASE_FILE_PATH)
     cursor = conn.cursor()
 
     cursor.execute('''
@@ -57,7 +57,7 @@ def create_table(remapping = {}):
 
 
 def print_all_rows():
-    conn = sqlite3.connect(DATABASE_NAME)
+    conn = sqlite3.connect(DATABASE_FILE_PATH)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT * FROM population

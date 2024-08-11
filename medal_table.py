@@ -6,12 +6,12 @@ import time
 from webdriver_manager.firefox import GeckoDriverManager
 
 
-DATABASE_NAME = 'medals.db'
+DATABASE_FILE_PATH = 'medals.db'
 _MEDAL_TABLE_URL = 'https://olympics.com/en/paris-2024/medals'
 
 
 def _create_medals_table():
-    conn = sqlite3.connect(DATABASE_NAME)
+    conn = sqlite3.connect(DATABASE_FILE_PATH)
     cursor = conn.cursor()
     
     # Create the table if it doesn't exist
@@ -34,7 +34,7 @@ def _create_medals_table():
 
 
 def _update_medals_table(order_number, flag_url, country_code, country_name, gold, silver, bronze, total_medals):
-    conn = sqlite3.connect(DATABASE_NAME)
+    conn = sqlite3.connect(DATABASE_FILE_PATH)
     cursor = conn.cursor()
 
     # Check if the row already exists
@@ -141,7 +141,7 @@ def create_table():
 
 
 def print_all_rows():
-    conn = sqlite3.connect(DATABASE_NAME)
+    conn = sqlite3.connect(DATABASE_FILE_PATH)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT m.*,

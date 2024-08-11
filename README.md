@@ -3,6 +3,8 @@
 
 A web app that presents an up-to-date 2024 Olympics Medal Table, with additional data. The motivation for this project was to experiment with FastHTML, Selenium, Pandas, SQLite, etc.
 
+**Note**: Now that the 2024 Olympics are over, the web-app no longer performs automatic updates by default (for obvious reasons). We use the `medals.db` SQLite database file instead.
+
 ## How-to build and run web app
 
 ```bash

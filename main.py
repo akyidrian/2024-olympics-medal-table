@@ -2,6 +2,7 @@ from fasthtml.fastapp import *
 import asyncio
 import fastlite
 import medal_table
+import os
 import population
 import sqlite3
 import random
@@ -50,8 +51,17 @@ async def background_task():
 
 @app.on_event("startup")
 async def startup_event():
-    create_database()
-    asyncio.create_task(background_task())
+    # If the database file doesn't already exist, we'll
+    # attempt to create and continually update the database.
+    # Since the 2024 Olympics are now complete, there is no
+    # guarentee creating and updating the database will
+    # work correctly...
+    if not os.path.isfile(medal_table.DATABASE_FILE_PATH):
+        print("INFO: Database does not already exist")
+        create_database()
+        asyncio.create_task(background_task())
+    else:
+        print("INFO: Database already exists")
 
 
 def create_world_winners_row(query_rows):
@@ -94,7 +104,7 @@ def create_country_row(query_row):
 
 
 def create_medal_table():
-    db = fastlite.database(medal_table.DATABASE_NAME)
+    db = fastlite.database(medal_table.DATABASE_FILE_PATH)
     query = '''
         SELECT m.*,
                COALESCE(p1.population, p2.population, 0) AS population
