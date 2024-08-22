@@ -20,7 +20,7 @@ function initializeTableSorting() {
 
     headers.forEach((header, index) => {
         header.addEventListener('click', () => {
-        sortTable(index);
+            sortTable(index);
         });
     });
 
@@ -30,6 +30,7 @@ function initializeTableSorting() {
 
         let direction;
         if (currentDirection === null) {
+            // If we click to sort a new table column, we use the default sort order first
             direction = defaultDirection;
         } else if (currentDirection === 'asc') {
             direction = 'desc';
@@ -44,7 +45,7 @@ function initializeTableSorting() {
             let cellA = rowA.querySelectorAll('td')[column].textContent.trim();
             let cellB = rowB.querySelectorAll('td')[column].textContent.trim();
 
-            // Check if the cell contains a number with commas and / or decimal places
+            // Check if the cell contains a number with commas
             if (cellA.match(/^\d{1,3}(,\d{3})*(\.\d+)?$/) && cellB.match(/^\d{1,3}(,\d{3})*(\.\d+)?$/)) {
                 cellA = parseFloat(cellA.replace(/,/g, ''));
                 cellB = parseFloat(cellB.replace(/,/g, ''));
@@ -54,9 +55,7 @@ function initializeTableSorting() {
         });
 
         // Remove all existing rows from the table body
-        while (tbody.firstChild) {
-        tbody.removeChild(tbody.firstChild);
-        }
+        tbody.innerHTML = ""
 
         // Append sorted rows to the table body
         tbody.append(...sortedRows);
